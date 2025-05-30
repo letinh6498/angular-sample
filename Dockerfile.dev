@@ -1,0 +1,33 @@
+# =========================================
+# Giai đoạn 1: Phát triển - Ứng dụng Angular
+# =========================================
+
+# Định nghĩa phiên bản Node.js sẽ sử dụng (Alpine giúp giảm dung lượng image)
+ARG NODE_VERSION=22.14.0-alpine
+
+# Sử dụng image Node.js làm môi trường phát triển
+FROM node:${NODE_VERSION} AS dev
+
+# Thiết lập biến môi trường để chỉ định chế độ phát triển
+ENV NODE_ENV=development
+
+# Đặt thư mục làm việc trong container là /app
+WORKDIR /app
+
+# Chỉ copy các file quản lý phụ thuộc (package.json, package-lock.json) trước
+# Điều này giúp tận dụng cache của Docker, tránh phải cài lại phụ thuộc nếu code thay đổi
+COPY package.json package-lock.json ./
+
+# Cài đặt các package phụ thuộc bằng npm ci
+# Sử dụng cache thư mục ~/.npm để tăng tốc độ cài đặt ở các lần build sau
+RUN --mount=type=cache,target=/root/.npm npm ci
+
+# Copy toàn bộ mã nguồn dự án vào container
+COPY . .
+
+# Mở cổng 4200 để truy cập vào server phát triển của Angular từ bên ngoài container
+EXPOSE 4200
+
+# Khởi động server phát triển của Angular, lắng nghe trên tất cả các địa chỉ mạng (0.0.0.0)
+# Điều này cho phép truy cập ứng dụng từ máy chủ khác hoặc trình duyệt bên ngoài container
+CMD ["npm", "start", "--", "--host=0.0.0.0"]
